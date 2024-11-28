@@ -1,0 +1,140 @@
+Last login: Thu Nov 28 15:41:18 on ttys000
+(base) freddiekuo@FreddiedeMacBook-Pro ~ % cd/Users/freddiekuo/Documents/GitHub 
+zsh: no such file or directory: cd/Users/freddiekuo/Documents/GitHub
+(base) freddiekuo@FreddiedeMacBook-Pro ~ % /Users/freddiekuo/Documents/GitHub 
+zsh: permission denied: /Users/freddiekuo/Documents/GitHub
+(base) freddiekuo@FreddiedeMacBook-Pro ~ % cd users
+cd: no such file or directory: users
+(base) freddiekuo@FreddiedeMacBook-Pro ~ % cd Documents
+(base) freddiekuo@FreddiedeMacBook-Pro Documents % cd GitHub
+(base) freddiekuo@FreddiedeMacBook-Pro GitHub % cd bitcoin-order-app
+(base) freddiekuo@FreddiedeMacBook-Pro bitcoin-order-app %  git checkout githubcicd 
+branch 'githubcicd' set up to track 'origin/githubcicd'.
+Switched to a new branch 'githubcicd'
+(base) freddiekuo@FreddiedeMacBook-Pro bitcoin-order-app % cd .github
+cd: no such file or directory: .github
+(base) freddiekuo@FreddiedeMacBook-Pro bitcoin-order-app % mkdir .github
+(base) freddiekuo@FreddiedeMacBook-Pro bitcoin-order-app % cd .github
+(base) freddiekuo@FreddiedeMacBook-Pro .github % mkdir workflows
+(base) freddiekuo@FreddiedeMacBook-Pro .github % cd workflows
+(base) freddiekuo@FreddiedeMacBook-Pro workflows % vi build.yml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+on:
+  push:
+    branches:
+      - githubcicd
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: browser-actions/setup-chrome@latest
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Cache node modules
+        id: cache-nodemodules
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-node-modules
+        with:
+          # caching node_modules
+          path: node_modules
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Install Dependencies
+        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
+        run: |
+          npm ci --force
+      - name: Build
+        run: |
+          npm run build --force
+      - name: Lint
+        run: |
+          npm run lint
+      - name: Update types to latest
+        run: |
+          npm install --save-dev @types/node@latest --force
+      #- name: Test
+      #  run: |
+      #    npm run test --watch=false --browsers=ChromeHeadless
+      - name: Conventional Changelog Action
+        id: changelog
+        uses: TriPSs/conventional-changelog-action@v3
+        with:
+          github-token: ${{ secrets.WORKSHOP6_GITHUB_TOKEN }}
+          output-file: "false"
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.WORKSHOP6_GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.changelog.outputs.tag }}
+          release_name: ${{ steps.changelog.outputs.tag }}
+          body: ${{ steps.changelog.outputs.clean_changelog }}
+      - name: Deploy
+        run: |
+          npm run deploy
+
+
